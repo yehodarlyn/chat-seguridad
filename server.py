@@ -17,7 +17,7 @@ lock = threading.Lock()
 
 
 def broadcast(mensaje, excluir_conn=None):
-    """Envía mensaje a todos los clientes conectados."""
+    """Envia mensaje a todos los clientes conectados."""
     with lock:
         for conn in list(clientes):
             if conn != excluir_conn:
@@ -82,7 +82,7 @@ def manejar_cliente(conn, addr):
         usuario = username
         conn.sendall(f"OK:{msg}".encode())
         logging.info(f"Conexion exitosa: {usuario} desde {addr}")
-        broadcast(f"[Servidor] {usuario} se unio al chat.", excluir_conn=conn)
+        broadcast(f"[Servidor] {usuario} se unio al chat", excluir_conn=conn)
 
         # --- Loop de mensajes ---
         while True:
