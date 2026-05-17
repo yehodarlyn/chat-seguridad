@@ -1,0 +1,45 @@
+"""
+logger_config.py
+Configura el sistema de bitácora (logging) para servidor y cliente.
+"""
+
+import logging
+import os
+from datetime import datetime
+
+
+def configurar_logger(nombre_archivo: str = "servidor.log", nivel=logging.INFO) -> None:
+    """
+    Configura el logger raíz con salida a archivo y consola.
+
+    Args:
+        nombre_archivo: Nombre del archivo de log.
+        nivel: Nivel mínimo de registro (default INFO).
+    """
+    logs_dir = os.path.join(os.path.dirname(__file__), "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+
+    ruta_log = os.path.join(logs_dir, nombre_archivo)
+
+    formato = logging.Formatter(
+        fmt="%(asctime)s | %(levelname)-8s | %(threadName)-15s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Handler → archivo (UTF-8 para soportar tildes y ñ)
+    fh = logging.FileHandler(ruta_log, encoding="utf-8")
+    fh.setLevel(nivel)
+    fh.setFormatter(formato)
+
+    # Handler → consola
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.WARNING)   # Solo warnings+ en consola para no saturar
+    ch.setFormatter(formato)
+
+    logger = logging.getLogger()
+    logger.setLevel(nivel)
+
+    # Evitar duplicar handlers si se llama varias veces
+    if not logger.handlers:
+        logger.addHandler(fh)
+        logger.addHandler(ch)
