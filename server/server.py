@@ -17,7 +17,7 @@ lock = threading.Lock()
 
 
 def broadcast(mensaje, excluir_conn=None):
-    """Envía mensaje a todos los clientes conectados."""
+    """Envia mensaje a todos los clientes conectados"""
     with lock:
         for conn in list(clientes):
             if conn != excluir_conn:
@@ -28,7 +28,7 @@ def broadcast(mensaje, excluir_conn=None):
 
 
 def enviar_privado(destino_usuario, mensaje):
-    """Envía mensaje solo al usuario destino."""
+    """Envia mensaje solo al usuario destino"""
     with lock:
         for conn, datos in clientes.items():
             if datos["usuario"] == destino_usuario:
@@ -43,7 +43,7 @@ def enviar_privado(destino_usuario, mensaje):
 def manejar_cliente(conn, addr):
     usuario = None
     try:
-        # --- Autenticación ---
+        # --- Autenticacion ---
         conn.sendall("CMD:AUTH".encode())
         datos_auth = json.loads(conn.recv(4096).decode())
 
@@ -51,9 +51,9 @@ def manejar_cliente(conn, addr):
         username = datos_auth.get("usuario", "").strip()
         password = datos_auth.get("password", "")
 
-        # Validación básica
+        # validacion basica
         if not username or len(username) < 3 or not username.isalnum():
-            conn.sendall("ERROR:Usuario inválido".encode())
+            conn.sendall("ERROR:Usuario invalido".encode())
             return
         if not password or len(password) < 4:
             conn.sendall("ERROR:Contraseña muy corta".encode())
@@ -64,7 +64,7 @@ def manejar_cliente(conn, addr):
         elif accion == "login":
             ok, msg = validar_login(username, password)
         else:
-            conn.sendall("ERROR:Acción desconocida".encode())
+            conn.sendall("ERROR:Accion desconocida".encode())
             return
 
         if not ok:
@@ -72,7 +72,7 @@ def manejar_cliente(conn, addr):
             logging.warning(f"Auth fallida [{accion}] usuario='{username}' desde {addr}")
             return
 
-        # Verificar límite de conexiones
+        # verificar liite de conexiones
         with lock:
             if len(clientes) >= MAX_CLIENTES:
                 conn.sendall("ERROR:Servidor lleno (max 5)".encode())
@@ -94,7 +94,7 @@ def manejar_cliente(conn, addr):
             if not mensaje_raw:
                 continue
 
-            # Mensaje privado: /msg destinatario texto
+            # mensaje privado:/msg destinatario texto
             if mensaje_raw.startswith("/msg "):
                 partes = mensaje_raw.split(" ", 2)
                 if len(partes) < 3:
@@ -107,8 +107,8 @@ def manejar_cliente(conn, addr):
                     conn.sendall(f"ERROR:Usuario '{destino}' no encontrado".encode())
                 logging.info(f"Privado: {usuario} -> {destino}")
             else:
-                # Mensaje público
-                logging.info(f"Mensaje público de {usuario}")
+                #mensaje publico
+                logging.info(f"Mensaje publico de {usuario}")
                 broadcast(f"{usuario}: {mensaje_raw}", excluir_conn=conn)
 
     except Exception as e:
@@ -118,8 +118,8 @@ def manejar_cliente(conn, addr):
             clientes.pop(conn, None)
         conn.close()
         if usuario:
-            broadcast(f"[Servidor] {usuario} se desconectó.")
-            logging.info(f"Desconexión: {usuario}")
+            broadcast(f"[Servidor] {usuario} se desconecto")
+            logging.info(f"Desconexion: {usuario}")
 
 
 def iniciar_servidor():

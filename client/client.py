@@ -15,7 +15,7 @@ def timestamp():
 
 
 def recibir_mensajes(conn):
-    """Hilo que escucha mensajes entrantes del servidor."""
+    """Hilo que escucha mensajes entrantes del servidor"""
     while True:
         try:
             data = conn.recv(4096)
@@ -32,28 +32,28 @@ def recibir_mensajes(conn):
             print(">> ", end="", flush=True)
 
         except Exception as e:
-            print(f"\n[Error de conexión]: {e}")
+            print(f"\n[Error de conexion]: {e}")
             break
 
 
 def autenticar(conn):
-    """Espera CMD:AUTH y envía credenciales."""
+    """Espera CMD:AUTH y envia credenciales"""
     data = conn.recv(4096).decode()
     if data != "CMD:AUTH":
-        print("Error: respuesta inesperada del servidor.")
+        print("Error: respuesta inesperada del servidor")
         return False
 
     print("\n=== Chat Seguro ===")
-    print("1. Iniciar sesión")
+    print("1. Iniciar sesion")
     print("2. Registrarse")
-    opcion = input("Elige una opción (1/2): ").strip()
+    opcion = input("Elige una opcion (1/2): ").strip()
 
     if opcion == "1":
         accion = "login"
     elif opcion == "2":
         accion = "registro"
     else:
-        print("Opción inválida.")
+        print("Opcion invalida")
         return False
 
     usuario  = input("Usuario: ").strip()
@@ -90,7 +90,7 @@ def iniciar_cliente():
         try:
             conn.connect((HOST, PORT))
         except ConnectionRefusedError:
-            print("No se pudo conectar. ¿Está el servidor corriendo?")
+            print("No se pudo conectar --> ¿Esta corriendo el servidor?")
             return
 
         if not autenticar(conn):

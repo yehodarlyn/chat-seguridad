@@ -13,6 +13,6 @@ def configurar_logger():
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[
             logging.FileHandler(f"{LOG_DIR}/servidor.log", encoding="utf-8"),
-            logging.StreamHandler()  # también imprime en consola
+            logging.StreamHandler()  # tambien imprime en consola
         ]
     )
