@@ -1,0 +1,25 @@
+2026-05-17 18:31:37 [INFO] Servidor escuchando en 127.0.0.1:5555
+2026-05-17 18:32:59 [WARNING] Auth fallida [login] usuario='Juan' desde ('127.0.0.1', 50394)
+2026-05-17 18:33:12 [INFO] Conexión exitosa: Juan desde ('127.0.0.1', 50398)
+2026-05-17 18:34:08 [INFO] Conexión exitosa: Lolo desde ('127.0.0.1', 50412)
+2026-05-17 18:34:47 [INFO] Mensaje público de Juan
+2026-05-17 18:35:04 [INFO] Mensaje público de Lolo
+2026-05-17 18:35:24 [INFO] Privado: Juan -> Juan
+2026-05-17 18:35:52 [INFO] Desconexión: Lolo
+2026-05-17 18:36:27 [INFO] Conexión exitosa: Lolo desde ('127.0.0.1', 50417)
+2026-05-17 18:36:38 [INFO] Privado: Juan -> lolo
+2026-05-17 18:36:47 [INFO] Privado: Juan -> Lolo
+2026-05-17 18:37:00 [INFO] Privado: Lolo -> Juan
+2026-05-17 18:37:57 [INFO] Desconexión: Juan
+2026-05-17 18:38:03 [INFO] Desconexión: Lolo
+2026-05-17 18:39:52 [INFO] Servidor escuchando en 127.0.0.1:5555
+2026-05-17 18:41:36 [INFO] Conexión exitosa: Lolo desde ('127.0.0.1', 50504)
+2026-05-17 18:41:45 [INFO] Conexión exitosa: Juan desde ('127.0.0.1', 50508)
+2026-05-17 18:41:54 [INFO] Conexión exitosa: Pepe desde ('127.0.0.1', 50510)
+2026-05-17 18:42:03 [INFO] Conexión exitosa: tete desde ('127.0.0.1', 50512)
+2026-05-17 18:42:11 [INFO] Conexión exitosa: olol desde ('127.0.0.1', 50514)
+2026-05-17 18:44:20 [INFO] Desconexión: olol
+2026-05-17 18:44:33 [INFO] Desconexión: tete
+2026-05-17 18:44:40 [INFO] Desconexión: Pepe
+2026-05-17 18:44:46 [INFO] Desconexión: Juan
+2026-05-17 18:44:56 [INFO] Desconexión: Lolo
