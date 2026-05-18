@@ -1,0 +1,187 @@
+================================================================
+  CHAT SEGURO — ESTRUCTURA DETALLADA DE ARCHIVOS
+  Seguridad Informática
+================================================================
+
+chat-seguro/
+│
+├── server/
+│   ├── server.py
+│   ├── auth.py
+│   ├── crypto.py
+│   ├── logger_config.py
+│   ├── users.json
+│   └── logs/
+│       └── servidor.log
+│
+├── client/
+│   ├── client.py
+│   └── crypto.py
+│
+├── shared/
+│   └── protocol.py
+│
+├── docs/
+│   ├── ARQUITECTURA.txt
+│   ├── ESCENARIOS_CONEXION.md
+│   ├── ESTRUCTURA_ARCHIVOS.txt
+│   └── ejemplo_uso.md
+│
+├── README.md
+├── requirements.txt
+└── .gitignore
+
+================================================================
+  DESCRIPCIÓN DETALLADA POR ARCHIVO
+================================================================
+
+────────────────────────────────────────────────────────────────
+server/server.py
+────────────────────────────────────────────────────────────────
+  PROPÓSITO  : Punto de entrada del servidor. Gestiona el ciclo
+               completo de vida de cada conexión.
+  CONSTANTES :
+    HOST         = '127.0.0.1'  (solo conexiones locales)
+    PORT         = 5555
+    MAX_CLIENTES = 5
+  ESTRUCTURAS:
+    clientes = {}   dict global { conn: { "usuario": str } }
+    lock            threading.Lock para acceso concurrente
+  FUNCIONES  :
+    iniciar_servidor()     abre socket, hace bind/listen, acepta
+                           conexiones en loop infinito
+    manejar_cliente()      hilo por cliente: auth → mensajes → cleanup
+    broadcast()            envía mensaje a todos excepto excluido
+    enviar_privado()       envía mensaje solo al usuario destino
+  IMPORTS    : auth, crypto, logger_config, socket, threading, json
+
+────────────────────────────────────────────────────────────────
+server/auth.py
+────────────────────────────────────────────────────────────────
+  PROPÓSITO  : Registro y autenticación de usuarios con
+               contraseñas hasheadas mediante bcrypt.
+  ARCHIVOS   : lee/escribe server/users.json
+  FUNCIONES  :
+    _cargar_usuarios()     carga JSON del disco, retorna dict
+    _guardar_usuarios()    serializa dict a JSON y guarda
+    registrar_usuario()    valida que no exista, hashea con
+                           bcrypt.hashpw + gensalt, guarda
+    validar_login()        carga hash, compara con bcrypt.checkpw
+  RETORNOS   : tupla (bool, str) → (éxito, mensaje)
+  SEGURIDAD  : bcrypt con sal aleatoria, nunca texto plano
+
+────────────────────────────────────────────────────────────────
+server/crypto.py  &  client/crypto.py
+────────────────────────────────────────────────────────────────
+  PROPÓSITO  : Generación de llaves RSA y operaciones de
+               cifrado/descifrado con esquema OAEP + SHA-256.
+  FUNCIONES  :
+    generar_llaves()         genera par llave_privada/publica RSA 2048
+    serializar_publica()     convierte llave pública a string PEM
+    deserializar_publica()   reconstruye llave pública desde PEM
+    cifrar_mensaje()         cifra bytes con llave pública (OAEP)
+    descifrar_mensaje()      descifra bytes con llave privada (OAEP)
+  NOTA       : El cliente genera su par de llaves al iniciar.
+               La llave privada nunca sale del cliente.
+
+────────────────────────────────────────────────────────────────
+server/logger_config.py
+────────────────────────────────────────────────────────────────
+  PROPÓSITO  : Configuración centralizada del sistema de logging.
+  SALIDA     : server/logs/servidor.log  +  consola (stdout)
+  FORMATO    : "YYYY-MM-DD HH:MM:SS [NIVEL] mensaje"
+  NIVELES USADOS:
+    INFO     conexión exitosa, mensajes enviados, desconexión
+    WARNING  login fallido, intento de registro duplicado
+    ERROR    excepciones en threads de clientes
+  FUNCIÓN    :
+    configurar_logger()   crea directorio logs/ si no existe,
+                          inicializa handlers de archivo y consola
+
+────────────────────────────────────────────────────────────────
+client/client.py
+────────────────────────────────────────────────────────────────
+  PROPÓSITO  : Cliente TCP con interfaz de línea de comandos.
+               Gestiona autenticación, envío y recepción.
+  FLUJO      :
+    1. genera llaves RSA (crypto.generar_llaves)
+    2. conecta TCP a HOST:PORT
+    3. llama autenticar() → espera CMD:AUTH → envía credenciales
+    4. lanza hilo recibir_mensajes() para escucha paralela
+    5. loop principal: lee input → valida → envía
+  COMANDOS   :
+    /msg <usuario> <texto>   mensaje privado
+    /ayuda                   muestra comandos
+    /salir                   cierra conexión
+  FUNCIONES  :
+    autenticar()             flujo de login/registro con el servidor
+    recibir_mensajes()       hilo que imprime mensajes entrantes
+    enviar()                 envía texto al servidor
+    mostrar_ayuda()          imprime lista de comandos
+
+────────────────────────────────────────────────────────────────
+shared/protocol.py
+────────────────────────────────────────────────────────────────
+  PROPÓSITO  : Define el formato estándar de mensajes entre
+               cliente y servidor usando JSON.
+  ESTRUCTURA DE MENSAJE:
+    {
+      "tipo"     : "publico" | "privado" | "sistema" | "error",
+      "usuario"  : "nombre_de_usuario",
+      "contenido": "texto del mensaje",
+      "hora"     : "HH:MM:SS"
+    }
+  FUNCIONES  :
+    crear_mensaje()          construye dict y serializa a JSON
+    parsear_mensaje()        deserializa JSON, fallback a texto
+    formatear_para_mostrar() convierte dict a string legible
+
+────────────────────────────────────────────────────────────────
+server/users.json
+────────────────────────────────────────────────────────────────
+  PROPÓSITO  : Almacén persistente de usuarios (sin base de datos).
+  FORMATO    :
+    {
+      "juan": {
+        "password": "$2b$12$HASH_BCRYPT_AQUI"
+      },
+      "maria": {
+        "password": "$2b$12$OTRO_HASH"
+      }
+    }
+  NOTAS      : Generado automáticamente al primer registro.
+               El hash bcrypt incluye la sal internamente.
+               Nunca se almacena la contraseña en texto plano.
+
+────────────────────────────────────────────────────────────────
+server/logs/servidor.log
+────────────────────────────────────────────────────────────────
+  PROPÓSITO  : Bitácora de todos los eventos del servidor.
+  EJEMPLO    :
+    2025-05-17 20:00:01 [INFO]    Servidor escuchando en 127.0.0.1:5555
+    2025-05-17 20:01:15 [INFO]    Conexión exitosa: juan desde ('127.0.0.1', 52100)
+    2025-05-17 20:01:32 [INFO]    Mensaje público de juan
+    2025-05-17 20:02:10 [WARNING] Auth fallida [login] usuario='hacker' desde ...
+    2025-05-17 20:05:44 [INFO]    Desconexión: juan
+  GENERADO   : automáticamente por logger_config.py
+
+────────────────────────────────────────────────────────────────
+requirements.txt
+────────────────────────────────────────────────────────────────
+  bcrypt==4.1.2
+  cryptography==42.0.5
+
+  Instalar: pip install -r requirements.txt
+
+────────────────────────────────────────────────────────────────
+.gitignore
+────────────────────────────────────────────────────────────────
+  __pycache__/
+  *.pyc
+  server/logs/
+  server/users.json
+  .env
+
+================================================================
+  FIN DEL DOCUMENTO
+================================================================

@@ -1,0 +1,145 @@
+================================================================
+  CHAT SEGURO — ARQUITECTURA DEL SISTEMA
+  Seguridad Informática
+================================================================
+
+1. DIAGRAMA DE CAPAS
+================================================================
+
+  ┌─────────────────────────────────────────────────────────┐
+  │                    CAPA DE PRESENTACIÓN                 │
+  │              client.py  —  Interfaz CLI                 │
+  │        (input/output por terminal, comandos /msg)       │
+  └───────────────────────┬─────────────────────────────────┘
+                          │ socket TCP (JSON)
+  ┌───────────────────────▼─────────────────────────────────┐
+  │                  CAPA DE COMUNICACIÓN                   │
+  │     protocol.py  —  Mensajes estructurados en JSON      │
+  │        { tipo, usuario, contenido, hora }               │
+  └───────────────────────┬─────────────────────────────────┘
+                          │
+  ┌───────────────────────▼─────────────────────────────────┐
+  │                   CAPA DE NEGOCIO                       │
+  │              server.py  —  Servidor TCP                 │
+  │   - acepta conexiones (máx. 5)                          │
+  │   - gestiona threads por cliente                        │
+  │   - broadcast / mensajes privados                       │
+  └──────────┬──────────────────────┬────────────────────────┘
+             │                      │
+  ┌──────────▼──────────┐  ┌────────▼───────────────────────┐
+  │   CAPA SEGURIDAD    │  │       CAPA DE LOGGING          │
+  │                     │  │                                │
+  │  auth.py            │  │  logger_config.py              │
+  │  - registro         │  │  - conexiones                  │
+  │  - login            │  │  - autenticaciones             │
+  │  - bcrypt hash      │  │  - mensajes                    │
+  │                     │  │  - errores                     │
+  │  crypto.py          │  │  → logs/servidor.log           │
+  │  - llaves RSA       │  └────────────────────────────────┘
+  │  - cifrado OAEP     │
+  └──────────┬──────────┘
+             │
+  ┌──────────▼──────────────────────────────────────────────┐
+  │                  CAPA DE PERSISTENCIA                   │
+  │         users.json  —  Almacén de usuarios              │
+  │         { "usuario": { "password": "HASH_BCRYPT" } }    │
+  └─────────────────────────────────────────────────────────┘
+
+
+2. DIAGRAMA DE CONEXIÓN CLIENTE-SERVIDOR
+================================================================
+
+  Cliente 1          Cliente 2          Cliente 3
+  (thread-1)         (thread-2)         (thread-3)
+      │                  │                  │
+      └──────────────────┼──────────────────┘
+                         │  TCP :5555
+                ┌────────▼────────┐
+                │    server.py    │
+                │                 │
+                │  accept()       │
+                │  → Thread(c1)   │
+                │  → Thread(c2)   │
+                │  → Thread(c3)   │
+                │                 │
+                │  clientes = {}  │  ← dict compartido (Lock)
+                └────────┬────────┘
+                         │
+              ┌──────────┼──────────┐
+              │          │          │
+           auth.py   crypto.py  logger.py
+
+
+3. FLUJO DE AUTENTICACIÓN
+================================================================
+
+  Cliente                          Servidor
+    │                                  │
+    │──── connect() TCP ──────────────►│
+    │                                  │
+    │◄─── "CMD:AUTH" ─────────────────│
+    │                                  │
+    │  (usuario escribe credenciales)  │
+    │                                  │
+    │──── JSON {accion, user, pass} ──►│
+    │                                  │  auth.py:
+    │                                  │  - valida formato
+    │                                  │  - bcrypt.checkpw()
+    │                                  │
+    │◄─── "OK:Login exitoso" ─────────│  (si correcto)
+    │  ó                               │
+    │◄─── "ERROR:..." ────────────────│  (si falla)
+    │                                  │
+    │  [entra al loop de mensajes]     │
+
+
+4. FLUJO DE MENSAJE PÚBLICO
+================================================================
+
+  Cliente A          Servidor           Cliente B   Cliente C
+     │                  │                  │            │
+     │── "hola todos" ─►│                  │            │
+     │                  │── "A: hola" ────►│            │
+     │                  │── "A: hola" ─────────────────►│
+     │                  │  (NO se reenvía a A)          │
+
+
+5. FLUJO DE MENSAJE PRIVADO
+================================================================
+
+  Cliente A          Servidor           Cliente B   Cliente C
+     │                  │                  │            │
+     │── "/msg B hola" ►│                  │            │
+     │                  │  busca B en      │            │
+     │                  │  clientes{}      │            │
+     │                  │── "[Privado A]" ►│            │
+     │                  │  (C no recibe)   │            │
+
+
+6. SEGURIDAD — CIFRADO RSA
+================================================================
+
+  GENERACIÓN (cliente al iniciar):
+  ┌─────────────────────────────────┐
+  │  llave_privada, llave_publica   │
+  │  = rsa.generate_private_key(    │
+  │      public_exponent=65537,     │
+  │      key_size=2048              │
+  │    )                            │
+  └─────────────────────────────────┘
+
+  CIFRADO (con llave pública del destinatario):
+  ┌─────────────────────────────────┐
+  │  cifrado = llave_publica.       │
+  │    encrypt(msg, OAEP(SHA-256))  │
+  └─────────────────────────────────┘
+
+  DESCIFRADO (con llave privada propia):
+  ┌─────────────────────────────────┐
+  │  texto = llave_privada.         │
+  │    decrypt(cifrado, OAEP(...))  │
+  └─────────────────────────────────┘
+
+================================================================
+  FIN DEL DOCUMENTO
+================================================================
